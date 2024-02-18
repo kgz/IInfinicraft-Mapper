@@ -1,0 +1,31 @@
+[package]
+name = "IInfinicraft-Mapper"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = { version = "*", features = ["rustls", "openssl"] }
+cron-job = "*"
+rusqlite = { version = "*", features = ["bundled"] }
+automod = "*"
+tokio = { version = "1", features = ["full"] }
+diesel = { version = "*", features = ["postgres", "mysql", "chrono", "bigdecimal", "num-bigint", "num-integer", "num-traits"] }
+chrono = { version = "0.4", features = ["serde"] }
+dotenv = "*"
+diesel_migrations = "*"
+serde_json = "*"
+serde = { version = "*", features = ["derive"] }
+maud = { version = "*", features = ["actix-web"] }
+rustls = "0.20.4"
+rustls-pemfile = "1.0.0"
+openssl = { version = "0.10.35", features = ["vendored"] }
+actix-cors = "*"
+jwt = "*"
+hmac = "*"
+sha2="*"
+argon2 = "*"
+reqwest = { version = "*", features = ["json"] }
+thirtyfour = "*"
+fantoccini = "*"
