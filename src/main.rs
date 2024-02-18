@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use IInfinicraft_Mapper::models::{element_maps::ElementMap, elements::Element};
 use thirtyfour::prelude::*;
 use fantoccini::{ClientBuilder, Locator};
+use actix_web::{Result};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Resp {
@@ -31,6 +32,7 @@ pub async fn add_to_db(path: web::Query<Resp>) -> HttpResponse {
             id: 0,
             emoji: emoji.clone(),
             name: result.clone(),
+            is_new: Some(is_new.clone()),
         };
         Element::create(new_element);
     }
@@ -55,6 +57,16 @@ pub async fn add_to_db(path: web::Query<Resp>) -> HttpResponse {
     HttpResponse::Ok().body("Added to db")
 }
 
+pub async fn get_elements() -> Result<web::Json<Vec<Element>>> {
+    let elements = Element::all();
+    Ok(web::Json(elements))
+}
+
+pub async fn get_element_map() -> Result<web::Json<Vec<ElementMap>>> {
+    let element_maps = ElementMap::all();
+    Ok(web::Json(element_maps))
+}
+
 #[actix_web::main]
 #[allow(unreachable_patterns)]
 async fn main() {
@@ -70,7 +82,9 @@ async fn main() {
         //     .max_age(3600);
 
             App::new().wrap(Cors::default().allow_any_origin().send_wildcard())
-                .route("/api/sync/", web::get().to(add_to_db))
+                .route("/api/sync", web::get().to(add_to_db))
+                .route("/api/elements", web::get().to(get_elements))
+                .route("/api/element_maps", web::get().to(get_element_map))
             
                
         

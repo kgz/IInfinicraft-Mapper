@@ -10,6 +10,7 @@ pub struct Element {
     pub id: i32,
     pub emoji: String,
     pub name: String,
+    pub is_new: Option<bool>,
 }
 
 

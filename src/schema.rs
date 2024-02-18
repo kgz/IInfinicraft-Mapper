@@ -18,6 +18,7 @@ diesel::table! {
         id -> Integer,
         emoji -> Mediumtext,
         name -> Mediumtext,
+        is_new -> Nullable<Bool>,
     }
 }
 

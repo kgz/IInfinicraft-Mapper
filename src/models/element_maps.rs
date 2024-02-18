@@ -41,6 +41,13 @@ impl ElementMap {
 
         element_maps::table.order(element_maps::id.desc()).first(conn).unwrap()
     }
+
+    pub fn all() -> Vec<ElementMap> {
+        let conn = &mut get_dbo();
+        element_maps::table.load(conn).unwrap()
+    }
+    
+
     // pub fn all() -> Vec<CronJob> {
     //     let conn = &mut get_dbo();
     //     jobs::table.load(conn).unwrap()
