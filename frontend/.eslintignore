@@ -1,0 +1,4 @@
+vite*
+*d.ts
+*test.js
+node_modules/*

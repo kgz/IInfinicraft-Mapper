@@ -16,7 +16,7 @@ pub struct ElementMap {
     pub id: i32,
     pub element_id: Option<i32>,
     pub second_element_id: Option<i32>,
-    pub result: Option<String>,
+    pub result: Option<i32>,
 }
 
 
@@ -46,7 +46,17 @@ impl ElementMap {
         let conn = &mut get_dbo();
         element_maps::table.load(conn).unwrap()
     }
+
+	pub fn find(id: i32) -> Result<ElementMap, diesel::result::Error> {
+		let conn = &mut get_dbo();
+		element_maps::table.find(id).first(conn)
+	}
     
+	pub fn find_by_result_id(result_id: i32) -> Vec<ElementMap> {
+		let conn = &mut get_dbo();
+		element_maps::table.filter(element_maps::result.eq(result_id)).load(conn).unwrap()
+	}
+
 
     // pub fn all() -> Vec<CronJob> {
     //     let conn = &mut get_dbo();

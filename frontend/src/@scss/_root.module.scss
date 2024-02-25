@@ -1,0 +1,35 @@
+@use 'theme';
+@use 'sass:list';
+
+@import url('https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap');
+
+:global{
+    *{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'PT Sans', sans-serif;
+        font-weight: 100;
+    }
+}
+
+
+:global {
+    :root {
+        @each $key, $value in theme.$theme {
+            --#{$key}: #{list.nth($value, 1)};
+        }
+    }
+}
+
+
+    
+.dark {
+    @each $key, $value in theme.$theme {
+        --#{$key}: #{list.nth($value, 2)};
+    }
+}
+
+:root{
+    --bs-gutter-x:
+}

@@ -1,5 +1,5 @@
 -- Your SQL goes here
-INSERT INTO elements (emoji, name) VALUES ('🔥', 'Fire');
-INSERT INTO elements (emoji, name) VALUES ('💧', 'Water');
-INSERT INTO elements (emoji, name) VALUES ('🌬️', 'Wind');
-INSERT INTO elements (emoji, name) VALUES ('🌍', 'Earth');
+INSERT INTO elements (id, emoji, name) VALUES (1, '🔥', 'Fire');
+INSERT INTO elements (id, emoji, name) VALUES (2, '💧', 'Water');
+INSERT INTO elements (id, emoji, name) VALUES (3, '🌬️', 'Wind');
+INSERT INTO elements (id, emoji, name) VALUES (4, '🌍', 'Earth');

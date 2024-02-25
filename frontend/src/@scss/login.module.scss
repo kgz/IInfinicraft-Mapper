@@ -1,0 +1,115 @@
+@use '_root.module' as root;
+.blackout {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	width: 100dvw;
+	height: 100%;
+	height: 100dvh;
+
+	background-color: rgba(0, 0, 0, 0.698);
+
+    display: grid;
+    place-items: center;
+
+	.container {
+		width: 700px;
+		// padding-bottom: 5px;
+		background-color: var(--primary-bg);
+		border-radius: 5px;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+
+		display: grid;
+		// 50% column;
+		flex-direction: row;
+		grid-template-columns: 0.5fr 0.5fr;
+
+		// make the background a white to l;ight purple gradient
+		// background: linear-gradient(180deg, #fff, #eb0cd9);
+
+        .login {
+            padding:20px
+        }
+
+		.title {
+			text-align: center;
+			margin-bottom: 20px;
+			color: var(--text);
+			font-size: 1.8rem;
+			font-family: 'PT Sans', sans-serif;
+			padding-block: 20px;
+			font-weight: 700;
+		}
+
+		.input {
+			width: 100%;
+			margin-bottom: 10px;
+			padding: 10px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+		}
+
+		form {
+			display: flex;
+			flex-direction: column;
+			// gap: 10px;
+			margin-bottom: 10px;
+		}
+
+		.social {
+			display: flex;
+			justify-content: center;
+			margin-top: 20px;
+			gap: 15px;
+			* {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				width: 38px;
+				aspect-ratio: 1/1;
+				border-radius: 50%;
+				left: 5px;
+				padding: 0px !important;
+				margin: 0px !important;
+
+				i {
+					font-size: 1.3rem;
+				}
+			}
+		}
+
+		.register {
+            background-color: var(--secondary-bg);
+            padding-top:20px;
+
+            .title {
+                
+                color: var(--text-secondary) !important;
+            }
+			.content {
+				padding: 20px;
+                padding-top: 0px;
+                .pitch {
+                    margin-bottom: 20px;
+                    color: var(--text-secondary);
+                    font-size: 1.2rem;
+                    font-weight: 700;
+                    display: grid;
+                    grid-template-columns: 0.2fr 0.8fr;
+                    // vertical-align: middle;
+                    // align-content: space-evenly;
+
+                    i {
+                        align-self: center !important;
+                    }
+                }   
+
+                .register_button{
+                    display: flex;
+                    justify-content: end;
+                }
+			}
+		}
+	}
+}

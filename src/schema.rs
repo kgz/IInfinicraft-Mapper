@@ -7,7 +7,7 @@ diesel::table! {
         id -> Integer,
         element_id -> Nullable<Integer>,
         second_element_id -> Nullable<Integer>,
-        result -> Nullable<Mediumtext>,
+        result -> Nullable<Integer>,
     }
 }
 
@@ -22,7 +22,19 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    use diesel::sql_types::*;
+
+    maps (id) {
+        id -> Integer,
+        element_id -> Nullable<Integer>,
+        second_element_id -> Nullable<Integer>,
+        result -> Nullable<Mediumtext>,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     element_maps,
     elements,
+    maps,
 );

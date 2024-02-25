@@ -13,6 +13,15 @@ pub struct Element {
     pub is_new: Option<bool>,
 }
 
+/// Capitalizes the first character in s.
+pub fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
 
 
 impl Element {
@@ -23,7 +32,10 @@ impl Element {
 
     pub fn find_by_name(name: &str) -> Result<Element, diesel::result::Error> {
         let conn = &mut get_dbo();
-        elements::table.filter(elements::name.eq(name)).first(conn)
+		let capatalized_name = capitalize(name);
+		let lower_name = name.to_lowercase();
+		let upper_name = name.to_uppercase();
+        elements::table.filter(elements::name.eq_any(&[name, &capatalized_name, &lower_name, &upper_name])).first(conn)
     }
 
     pub fn create(new_element: Element) -> Element {
@@ -36,10 +48,10 @@ impl Element {
         elements::table.order(elements::id.desc()).first(conn).unwrap()
     }
 
-    // pub fn find(id: i32) -> CronJob {
-    //     let conn = &mut get_dbo();
-    //     jobs::table.find(id).first(conn).unwrap()
-    // }
+    pub fn find(id: i32) -> Result<Element, diesel::result::Error> {
+        let conn = &mut get_dbo();
+        elements::table.find(id).first(conn)
+    }
 
     // pub fn create(title: String, description: String) -> CronJob {
     //     let new_job = CronJob {
@@ -71,3 +83,5 @@ impl Element {
     //     }
     // }
 }
+
+
