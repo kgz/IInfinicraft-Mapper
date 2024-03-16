@@ -61,10 +61,65 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
     println!("Element1: {:?}, Element2: {:?}, Result: {}, Emoji: {}, Is New: {}", element1, element2, result, emoji, is_new);
 	Ok(web::Json(result_exists))
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Filter {
+	id: String,
+	value: String,
+}
 
-pub async fn get_elements() -> Result<web::Json<Vec<Element>>> {
-    let elements = Element::all();
-    Ok(web::Json(elements))
+#[derive(Serialize, Deserialize, Debug)]
+
+pub struct GetElementsQuery {
+    start: Option<i32>,
+	size: Option<i32>,
+	// search: Option<String>,
+	//filters array of filter
+	filters: Option<String>,
+	globalFilter: Option<String>,
+
+}
+#[derive(Serialize, Clone)]
+pub struct ElementsResponse {
+	data: Vec<Element>,
+	total_row_count: i32,
+}
+pub async fn get_elements(path: web::Query<GetElementsQuery>) -> Result<web::Json<ElementsResponse>> {
+	let start = path.start.unwrap_or(-1);
+	let size = path.size.unwrap_or(10);
+	let filters = path.filters.clone().unwrap_or("[]".to_string());
+
+	// json decode filters
+	let filters: Vec<Filter> = serde_json::from_str(&filters).unwrap();
+
+	// let search = path.search.clone().unwrap();
+	println!("Start: {}, End: {}", start, size);
+
+
+	let mut elements = Element::all();
+
+	if  filters.len() > 0 {
+		elements = elements.into_iter().filter(|el| {
+			for filter in filters.iter() {
+				if filter.id == "name" {
+					if !el.name.to_lowercase().contains(&filter.value.to_lowercase()) {
+						return false;
+					}
+				}
+			}
+			true
+		}).collect();
+	}
+
+	let total = elements.len();
+
+	if start != -1 {
+		elements = elements.into_iter().skip(start as usize).take((size) as usize).collect();
+	}
+	
+    Ok(web::Json(ElementsResponse {
+		data: elements,
+		total_row_count: total as i32,
+	}))
 }
 
 pub async fn get_element_map() -> Result<web::Json<Vec<ElementMap>>> {

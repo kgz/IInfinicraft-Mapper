@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAppDispatch, useAppSelector } from '../../@store/store'
+import { useAppDispatch, useAppSelector } from '../@store/store'
 import {
 	TableRow,
 	TableHeaderCell,
@@ -16,10 +16,10 @@ import {
 	Input,
 	Popup,
 } from 'semantic-ui-react'
-import { getElementMaps, getElements } from '../../@store/slices/elements'
-import type { TElement } from '../../@types/elements'
+import { getElementMaps, getElements } from '../@store/slices/elements'
+import type { TElement } from '../@types/elements'
 
-export const Migrations = () => {
+export const ElementList = () => {
 	const { element_maps, elements } = useAppSelector(state => state.elementSlice)
 	const dispatch = useAppDispatch()
 	useEffect(() => {
@@ -230,4 +230,4 @@ export const Migrations = () => {
 	)
 }
 
-export default Migrations
+export default ElementList

@@ -1,5 +1,5 @@
 export type Styles = {
-  container: string;
+  dark: string;
 };
 
 export type ClassNames = keyof Styles;

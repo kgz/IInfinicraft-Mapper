@@ -1,30 +1,13 @@
 import axios from 'axios'
-import type { MutableRefObject } from 'react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import ReactFamilyTree from 'react-family-tree'
 import type { GraphEdge, GraphNode } from 'reagraph'
-import { RelType, Gender } from 'relatives-tree/lib/types'
-import type { Node, ExtNode } from 'relatives-tree/lib/types'
+import type { ExtNode } from 'relatives-tree/lib/types'
 import type { ForceGraphMethods, LinkObject, NodeObject } from 'react-force-graph-2d'
 import ForceGraph3D from 'react-force-graph-2d'
-import {
-	TableRow,
-	TableHeaderCell,
-	TableHeader,
-	TableFooter,
-	TableCell,
-	TableBody,
-	MenuItem,
-	Icon,
-	Label,
-	Menu,
-	Table,
-	Button,
-	Input,
-	Popup,
-} from 'semantic-ui-react'
+import { Label, Input } from 'semantic-ui-react'
 
 import { forceCollide } from 'd3'
+import { Button, Chip, CircularProgress, Table, TableBody, TableCell, TableRow } from '@mui/material'
 
 type E = {
 	id: number
@@ -52,11 +35,14 @@ export const FamilyNode = memo(function FamilyNode({ node, style }: FamilyNodePr
 	)
 })
 
-const Search = () => {
-	const [search, setSearch] = useState('')
+const Search = ({ initial_search = '', result_only = false }: { initial_search?: string; result_only?: boolean }) => {
+	const [search, setSearch] = useState(initial_search)
+	const [loading, setLoading] = useState(false)
 	const [results, setResults] = useState<TResp | null>(null)
+	const [spacing, setSpacing] = useState(1)
 
 	const ref = useRef<ForceGraphMethods<NodeObject<GraphNode>, LinkObject<GraphNode, GraphEdge>> | undefined>()
+	const wrapperRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		const fg = ref.current
@@ -64,7 +50,7 @@ const Search = () => {
 		if (!fg) return
 
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
-		fg.d3Force('collide', forceCollide(100))
+		fg.d3Force('collide', forceCollide(120 * spacing))
 		// fg.d3Force(
 		// 	'collision',
 		// 	forceCollide(node => Math.sqrt(100 / (node.level + 10))),
@@ -74,21 +60,28 @@ const Search = () => {
 		fg.d3Force('charge')?.strength(250)
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
 		fg.d3Force('link')?.distance(150)
-
-		// left right node spacing
+		// fg.zoomToFit(0)
+		fg.zoom(0.2)
+		// fg.centerAt((window.innerWidth * 0.8) / 2, window.innerHeight / 2, 0)
+		// fg.centerAt(-1000, 1000, 0)
+		// // left right node spacing
 		// fg.d3Force('x', null)
-	}, [ref, results])
+	}, [ref, results, spacing])
 
-	const handleSearch = () => {
+	const handleSearch = useCallback(() => {
+		setResults(null)
+		setLoading(true)
 		void axios
 			.get<TResp>(`https://localhost:2021/api/match?element=${search}`)
 			.then(response => setResults(response.data))
 			.catch(error => console.log('error', error))
-	}
+			.finally(() => setLoading(false))
+	}, [search])
 
 	useEffect(() => {
-		console.log('search', results)
-	}, [results])
+		if (loading || results) return
+		if (initial_search && search) handleSearch()
+	}, [handleSearch, initial_search, loading, results, search])
 
 	const [nodes1, edges1]: [GraphNode[], GraphEdge[]] = useMemo(() => {
 		if (!results) return [[], []]
@@ -143,66 +136,357 @@ const Search = () => {
 		return [nodes, edges]
 	}, [results])
 
+	const steps = useMemo(() => {
+		if (!results) return
+		const out: {
+			firstElement: E | undefined
+			secondElement: E | undefined
+			result: E
+		}[] = []
+		const el = results
+
+		const addNode = (el: TResp, level: number) => {
+			if (!el.parent1 && !el.parent2) return
+			out.push({
+				firstElement: el.parent1?.element,
+				secondElement: el.parent2?.element,
+				result: el.element,
+			})
+			if (el.parent1) addNode(el.parent1, level + 1)
+			if (el.parent2) addNode(el.parent2, level + 1)
+		}
+		addNode(el, 0)
+
+		// order by required create order
+		const out2: {
+			firstElement: E | undefined
+			secondElement: E | undefined
+			result: E
+			reason: string
+		}[] = []
+
+		let index = 0
+		let safety = out.length * 3 * 2
+		const ogSafety = safety
+		let safety2 = 10 ** 100000
+		while (out.length > 0) {
+			const el = out[index] // { firstElement, secondElement, result}
+
+			if (safety2-- < 0) {
+				console.log('safety2')
+				break
+			}
+
+			if (safety-- < 0) {
+				console.log('safety')
+				console.log('cant find', el)
+				// out2.push(el)
+				// out.splice(index, 1)
+				// if its first
+				const first = out2.find(e => e.result.id === el.firstElement?.id)
+				// if (!first) {
+				// 	out2.push({
+				// 		firstElement: undefined,
+				// 		secondElement: undefined,
+				// 		result: el.firstElement as E,
+				// 	})
+				// }
+
+				// // if its second
+				// const second = out2.find(e => e.result.id === el.secondElement?.id)
+				// if (!second) {
+				// 	out2.push({
+				// 		firstElement: undefined,
+				// 		secondElement: undefined,
+				// 		result: el.secondElement as E,
+				// 	})
+				// }
+
+				out2.push({
+					firstElement: el.firstElement,
+					secondElement: el.secondElement,
+					result: el.result,
+					reason: 'safety',
+				})
+
+				// if its result
+
+				out.splice(index, 1)
+				safety = ogSafety
+				index = 0
+				continue
+				// index = 0
+				// break
+			}
+
+			// what do we need to do, check that bothe these elements are in the list
+
+			if (!el) {
+				console.log('cant find', el)
+				// continue
+				break
+			}
+
+			if (!el.firstElement && !el.secondElement) {
+				out2.push({
+					firstElement: undefined,
+					secondElement: undefined,
+					result: el.result,
+					reason: 'base',
+				})
+
+				out.splice(index, 1)
+				safety = ogSafety
+				index = 0
+				continue
+			}
+
+			// if btoh are base elements then add
+			if ((el.firstElement?.id ?? -1) < 5 && (el.secondElement?.id ?? -1) < 5) {
+				console.log(`adding ${el.firstElement?.name} and ${el.firstElement?.name} due to base`)
+				out2.push({
+					firstElement: el.firstElement,
+					secondElement: el.secondElement,
+					result: el.result,
+					reason: 'base',
+				})
+				out.splice(index, 1)
+				safety = ogSafety
+
+				index = 0
+				continue
+			}
+
+			// else check if they both are in the list
+			const first = out2.find(e => e.result.id === el.firstElement?.id)
+			const second = out2.find(e => e.result.id === el.secondElement?.id)
+			if (
+				(first && second) ||
+				(first && (el.secondElement?.id ?? -1) < 5) ||
+				(second && (el.firstElement?.id ?? -1) < 5)
+			) {
+				console.log(`found ${first?.result?.name} and ${second?.result?.name}`, first, second)
+				out2.push({
+					firstElement: el.firstElement,
+					secondElement: el.secondElement,
+					result: el.result,
+					reason: 'found ' + (first?.result?.name ?? '') + ' and ' + (second?.result?.name ?? ''),
+				})
+				out.splice(index, 1)
+				safety = ogSafety
+
+				index = 0
+				continue
+			} else {
+				console.log(`cant find ${el.firstElement?.name} and ${el.secondElement?.name}`, first, second, out2)
+			}
+
+			if (index >= out.length - 1) {
+				// out2.push(el)
+				// out.splice(index, 1)
+				// console.log
+				index = 0
+				continue
+			}
+			// else move to the next
+			index += 1
+		}
+		// make unique
+		// out2 = out2.reduce(
+		// 	(acc, current) => {
+		// 		const x = acc.find(item => item.result.id === current.result.id)
+		// 		if (!x) {
+		// 			return acc.concat([current])
+		// 		} else {
+		// 			return acc
+		// 		}
+		// 	},
+		// 	[] as typeof out2,
+		// )
+		console.log({ out2 })
+		return out2
+	}, [results])
+
+	useEffect(() => {
+		const t = steps?.map((step, index) => {
+			return `${step.firstElement?.emoji ?? ''} ${step.firstElement?.name ?? 'unknown'} + ${
+				step.secondElement?.emoji ?? ''
+			} ${step.secondElement?.name ?? 'unknown'} = ${step.result.emoji} ${step.result.name}`
+		})
+		console.log({ t })
+	}, [steps])
+
 	return (
 		<div
 			style={{
 				display: 'flex',
 				flexDirection: 'column',
 				justifyContent: 'center',
+				// background: 'pink',
 			}}
 		>
-			<div
-				style={{
-					// width: 200,
-					display: 'flex',
-					justifyContent: 'center',
-					marginTop: 40,
-				}}
-			>
-				<Input type="search" value={search} onChange={e => setSearch(e.target.value)} />
-				<Button onClick={handleSearch}>Search</Button>
-			</div>
-			{results && (
-				<ForceGraph3D
-					ref={ref}
-					graphData={{ nodes: nodes1, links: edges1 }}
-					nodeAutoColorBy="label"
-					linkAutoColorBy="source"
-					linkDirectionalParticles={0}
-					linkDirectionalArrowLength={1}
-					linkDirectionalArrowRelPos={100}
-					nodeRelSize={5}
-					// nodeVal={node => node.level as number}
-					dagLevelDistance={200}
-					// dagMode="td"
-					// set length of links
-					nodeId="id"
-					width={window.innerWidth}
-					height={window.innerHeight}
-					dagMode="td"
-					d3VelocityDecay={0.3}
-					// use level distance to set the distance between levels
-
-					nodeCanvasObject={(node, ctx, globalScale) => {
-						const label = node.label
-						const fontSize = 20 / globalScale
-						ctx.font = `${fontSize}px Sans-Serif`
-						// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-						const textWidth = ctx.measureText(label as string).width
-						const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2) as [number, number]
-
-						ctx.fillStyle = 'rgba(255,255,255, 0)'
-						// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-						ctx.fillRect(node?.x ?? 0 - bckgDimensions[0] / 2, node?.y ?? 0 - bckgDimensions[1] / 2, ...bckgDimensions)
-
-						ctx.textAlign = 'center'
-						ctx.textBaseline = 'middle'
-						ctx.fillStyle = 'black'
-						// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-						ctx.fillText(label as string, node.x ?? 0, node.y ?? 0)
+			{!result_only && (
+				<div
+					style={{
+						// width: 200,
+						display: 'flex',
+						justifyContent: 'center',
+						marginTop: 40,
 					}}
-				/>
+				>
+					<Input
+						loading={loading}
+						type="search"
+						value={search}
+						onChange={e => setSearch(e.target.value)}
+						onKeyPress={e => e.key === 'Enter' && handleSearch()}
+					/>
+					<Button onClick={handleSearch}>Search</Button>
+					<Input
+						loading={loading}
+						type="number"
+						min="0.01"
+						max="10"
+						step="0.5"
+						value={spacing}
+						onChange={e => setSpacing(parseFloat(e.target.value))}
+					/>
+					<Label>Spacing</Label>
+				</div>
 			)}
+
+			{loading && (
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'center',
+						// marginTop: 40,
+						alignContent: 'center',
+						alignItems: 'center',
+						// height: 500,
+						// transitionDuration: '200ms',
+						// change direction of transition
+						// transform: loading ? 'scale(0)' : 'scale(1)',
+						overflow: 'hidden',
+						height: 500,
+					}}
+				>
+					<CircularProgress />
+				</div>
+			)}
+			{
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'center',
+						opacity: loading ? 0 : 1,
+						transition: 'opacity 3s',
+						height: loading ? 0 : 500,
+						// display: loading ? 'none' : 'flex',
+					}}
+					ref={wrapperRef}
+				>
+					<div
+						style={{
+							width: 400,
+							height: '100%',
+							overflow: 'auto',
+							marginRight: 20,
+						}}
+					>
+						<Table>
+							<TableBody>
+								<TableRow>
+									<TableCell sx={{ p: 0.5 }}>Step</TableCell>
+									<TableCell sx={{ p: 0.5 }}>First Element</TableCell>
+									<TableCell width={10} sx={{ p: 0.5 }}>
+										+
+									</TableCell>
+									<TableCell sx={{ p: 0.5 }}>Second Element</TableCell>
+									<TableCell width={10} sx={{ p: 0.5 }}>
+										=
+									</TableCell>
+									<TableCell sx={{ p: 0.5 }}>Result</TableCell>
+								</TableRow>
+								{steps?.map((step, index) => {
+									return (
+										<TableRow key={index}>
+											<TableCell sx={{ p: 0.5 }}>{index}</TableCell>
+											<TableCell sx={{ p: 0.5 }}>
+												{step.firstElement?.emoji} {step.firstElement?.name}
+											</TableCell>
+											<TableCell width={10} sx={{ p: 0.5 }}>
+												+
+											</TableCell>
+											<TableCell
+												sx={{ p: 0.5 }}
+												style={{
+													whiteSpace: 'nowrap',
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+												}}
+											>
+												{step.secondElement?.emoji} {step.secondElement?.name}
+											</TableCell>
+											<TableCell width={10} sx={{ p: 0.5 }}>
+												=
+											</TableCell>
+											<TableCell sx={{ p: 0.5 }}>
+												{step.result.emoji} {step.result.name}
+											</TableCell>
+										</TableRow>
+									)
+								})}
+							</TableBody>
+						</Table>
+					</div>
+					<ForceGraph3D
+						ref={ref}
+						graphData={{ nodes: nodes1, links: edges1 }}
+						nodeAutoColorBy="label"
+						linkAutoColorBy="source"
+						linkDirectionalParticles={0}
+						linkDirectionalArrowLength={1}
+						linkDirectionalArrowRelPos={100}
+						nodeRelSize={5}
+						backgroundColor="#222"
+						// nodeVal={node => node.level as number}
+						dagLevelDistance={200 * spacing}
+						// dagMode="td"
+						// set length of links
+						nodeId="id"
+						// width={wrapperRef.current?.offsetWidth}
+						// height={wrapperRef.current?.offsetHeight}
+						width={window.innerWidth * 0.6}
+						height={500}
+						dagMode="td"
+						d3VelocityDecay={0.3}
+						// use level distance to set the distance between levels
+						nodeCanvasObject={(node, ctx, globalScale) => {
+							const label = node.label
+							const fontSize = 20 / globalScale
+							ctx.font = `${fontSize}px Sans-Serif`
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+							const textWidth = ctx.measureText(label as string).width
+							const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2) as [number, number]
+
+							ctx.fillStyle = 'rgba(255,255,255, 0)'
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+							ctx.fillRect(
+								node?.x ?? 0 - bckgDimensions[0] / 2,
+								node?.y ?? 0 - bckgDimensions[1] / 2,
+								...bckgDimensions,
+							)
+
+							ctx.textAlign = 'center'
+							ctx.textBaseline = 'middle'
+							ctx.fillStyle = '#cbcbcb'
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+							ctx.fillText(label as string, node.x ?? 0, node.y ?? 0)
+						}}
+					/>
+				</div>
+			}
 		</div>
 	)
 }

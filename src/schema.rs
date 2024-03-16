@@ -33,6 +33,8 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(element_maps -> elements (result));
+
 diesel::allow_tables_to_appear_in_same_query!(
     element_maps,
     elements,

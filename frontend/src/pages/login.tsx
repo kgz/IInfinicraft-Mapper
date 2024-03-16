@@ -17,7 +17,7 @@ const Login = () => {
 				<div className={styles.login}>
 					<div className={styles.title}>Login</div>
 					<form>
-						<Form className={styles.form}>
+						<Form>
 							<Form.Field error={email && !validateEmail(email)}>
 								<Form.Input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} />
 							</Form.Field>
@@ -79,7 +79,7 @@ const Login = () => {
 							<span>Ability to track and get suggestion based on your favorite sports and teams!</span>
 						</div>
 
-						<div className={styles.register_button}>
+						<div>
 							<a
 								style={{
 									marginTop: 10,

@@ -20,9 +20,9 @@ export const getElements = createAsyncThunk('migrations/getElements', async (_, 
 	return new Promise<TElement[]>((resolve, reject) => {
 		// void dispatch(setMigrationsRunning(true))
 		axios
-			.get<TElement[]>('https://localhost:2021/api/elements')
+			.get<{ data: TElement[] }>('https://localhost:2021/api/elements')
 			.then(response => {
-				resolve(response.data)
+				resolve(response.data.data)
 			})
 			.catch(error => {
 				// reject(rejectWithValue(error))

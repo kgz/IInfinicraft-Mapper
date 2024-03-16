@@ -23,7 +23,17 @@ pub struct Resp {
 
 pub fn get_element_matches(el: &Element) -> E {
 
+	//base elements
+	if el.id < 5 {
+		return E {
+			element: el.clone(),
+			parent1: None,
+			parent2: None,
+		}
+	}
+
 	let matches = ElementMap::find_by_result_id(el.id);
+
 	println!("Matches: {:?}", matches);
 	if matches.is_empty() {
 		println!("No matches found {:?}", el.id);
@@ -58,7 +68,7 @@ pub fn get_element_matches(el: &Element) -> E {
 		return E {
 			element: el.clone(),
 			parent1: None,
-			parent2: Some(Box::new(get_element_matches(&p2))),
+			parent2: None,
 		}
 	}
 
