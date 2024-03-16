@@ -89,6 +89,15 @@ const Example = () => {
 				header: 'emoji',
 			},
 			{
+				header: 'is_new',
+				accessorKey: 'is_new',
+				Header: 'New',
+				Cell: ({ row }) => {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+					return <>{row.original.is_new ? 'new' : 'old'}</>
+				},
+			},
+			{
 				Header: 'Element Map',
 				header: 'id',
 				accessorKey: 'id',
