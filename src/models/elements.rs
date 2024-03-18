@@ -3,6 +3,14 @@ use diesel::{deserialize::FromSql, mysql::MysqlValue, prelude::*, sql_types::{Bi
 use serde::{Deserialize, Serialize};
 use crate::schema::elements;
 
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct E {
+    element: Element,
+    parent1: Option<Box<E>>,
+    parent2: Option<Box<E>>,
+}
+
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, Clone, PartialEq, Eq, Hash)]
 #[diesel(table_name = elements)]
 #[diesel(check_for_backend(diesel::mysql::Mysql))]
@@ -11,6 +19,7 @@ pub struct Element {
     pub emoji: String,
     pub name: String,
     pub is_new: Option<bool>,
+	pub map: Option<String>,
 }
 
 /// Capitalizes the first character in s.
@@ -52,6 +61,16 @@ impl Element {
         let conn = &mut get_dbo();
         elements::table.find(id).first(conn)
     }
+
+	pub fn update_map(id: i32, map: String) -> Result<Element, diesel::result::Error> {
+		let conn = &mut get_dbo();
+		diesel::update(elements::table.find(id))
+			.set(elements::map.eq(map))
+			.execute(conn)
+			.unwrap();
+		elements::table.find(id).first(conn)
+	}
+
 
     // pub fn create(title: String, description: String) -> CronJob {
     //     let new_job = CronJob {

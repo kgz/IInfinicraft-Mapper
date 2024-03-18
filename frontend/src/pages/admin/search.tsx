@@ -7,7 +7,19 @@ import ForceGraph3D from 'react-force-graph-2d'
 import { Label, Input } from 'semantic-ui-react'
 
 import { forceCollide } from 'd3'
-import { Button, Chip, CircularProgress, Table, TableBody, TableCell, TableRow } from '@mui/material'
+import {
+	Alert,
+	Button,
+	Checkbox,
+	Chip,
+	CircularProgress,
+	Table,
+	TableBody,
+	TableCell,
+	TableRow,
+	Tooltip,
+	Typography,
+} from '@mui/material'
 
 type E = {
 	id: number
@@ -39,7 +51,7 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 	const [search, setSearch] = useState(initial_search)
 	const [loading, setLoading] = useState(false)
 	const [results, setResults] = useState<TResp | null>(null)
-	const [spacing, setSpacing] = useState(1)
+	const [spacing, setSpacing] = useState(3)
 
 	const ref = useRef<ForceGraphMethods<NodeObject<GraphNode>, LinkObject<GraphNode, GraphEdge>> | undefined>()
 	const wrapperRef = useRef<HTMLDivElement>(null)
@@ -171,6 +183,14 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 		let safety2 = 10 ** 100000
 		while (out.length > 0) {
 			const el = out[index] // { firstElement, secondElement, result}
+
+			// if el is already in out2
+			if (out2.find(e => e.result.id === el.result.id)) {
+				out.splice(index, 1)
+				safety = ogSafety
+				index = 0
+				continue
+			}
 
 			if (safety2-- < 0) {
 				console.log('safety2')
@@ -388,7 +408,7 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 				>
 					<div
 						style={{
-							width: 400,
+							width: 500,
 							height: '100%',
 							overflow: 'auto',
 							marginRight: 20,
@@ -398,6 +418,7 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 							<TableBody>
 								<TableRow>
 									<TableCell sx={{ p: 0.5 }}>Step</TableCell>
+									<TableCell sx={{ p: 0.5 }}>Done?</TableCell>
 									<TableCell sx={{ p: 0.5 }}>First Element</TableCell>
 									<TableCell width={10} sx={{ p: 0.5 }}>
 										+
@@ -412,6 +433,9 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 									return (
 										<TableRow key={index}>
 											<TableCell sx={{ p: 0.5 }}>{index}</TableCell>
+											<TableCell sx={{ p: 0.5 }}>
+												<Checkbox size="small" />
+											</TableCell>
 											<TableCell sx={{ p: 0.5 }}>
 												{step.firstElement?.emoji} {step.firstElement?.name}
 											</TableCell>
@@ -439,6 +463,19 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 								})}
 							</TableBody>
 						</Table>
+
+						<Alert
+							sx={{
+								position: 'sticky',
+								bottom: 0,
+							}}
+							severity="warning"
+						>
+							<>
+								* This may not be the most efficient way to get to the result, we do not have enough brain power for
+								that.
+							</>
+						</Alert>
 					</div>
 					<ForceGraph3D
 						ref={ref}

@@ -13,6 +13,9 @@ import Index from './pages'
 import Map from './pages/admin/map'
 import SearchPage from './pages/admin/search'
 // create conetex for types const [isLoggedin, setIsLoggedin] = useState(false);
+import createActivityDetector from 'activity-detector'
+import { getElements } from './@store/slices/elements'
+import { useAppDispatch } from './@store/store'
 
 const DARK = false
 
@@ -26,6 +29,41 @@ const darkTheme = createTheme({
 
 const App: React.FC = () => {
 	const [collapsed, setCollapsed] = useState(false)
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	const activityDetector = createActivityDetector()
+	const [disabledSince, setDisabledSince] = useState<false | number>(false)
+	const dispatch = useAppDispatch()
+	// // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	// activityDetector.on('active', () => {
+	// 	setDisabledSince(false)
+	// })
+
+	// // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	// activityDetector.on(
+	// 	'idle',
+	// 	() => {
+	// 		setDisabledSince(Date.now())
+	// 	},
+	// 	1000,
+	// )
+
+	// useEffect(() => {
+	// 	const interval = setInterval(() => {
+	// 		// if (disabledSince) {
+	// 		// 	console.log('disabled since', disabledSince)
+	// 		// 	return
+	// 		// }
+	// 		console.log('dispatching getElements')
+	// 		void dispatch(getElements())
+	// 	}, 10000)
+
+	// 	return () => clearInterval(interval)
+	// }, [disabledSince, dispatch])
+
+	useEffect(() => {
+		void dispatch(getElements())
+	}, [dispatch])
+
 	const {
 		token: { colorBgContainer, borderRadiusLG },
 	} = theme.useToken()

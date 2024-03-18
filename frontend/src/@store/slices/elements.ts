@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import axios from 'axios'
 import type { TElement, TElementMap } from '../../@types/elements'
+import type { TRootState } from '../store'
 
 export const initialState: {
 	elements: TElement[]
@@ -16,22 +17,33 @@ export const setElements = createAsyncThunk('migrations/setElements', async (ele
 	})
 })
 
-export const getElements = createAsyncThunk('migrations/getElements', async (_, { rejectWithValue, dispatch }) => {
-	return new Promise<TElement[]>((resolve, reject) => {
-		// void dispatch(setMigrationsRunning(true))
-		axios
-			.get<{ data: TElement[] }>('https://localhost:2021/api/elements')
-			.then(response => {
-				resolve(response.data.data)
-			})
-			.catch(error => {
-				// reject(rejectWithValue(error))
-			})
-			.finally(() => {
-				// void dispatch(setMigrationsRunning(false))
-			})
-	})
-})
+export const getElements = createAsyncThunk(
+	'migrations/getElements',
+	async (_, { rejectWithValue, dispatch, getState }) => {
+		return new Promise<TElement[]>((resolve, reject) => {
+			// void dispatch(setMigrationsRunning(true))
+			const state = getState() as TRootState
+			console.log({ state })
+			const lastel = state.elementSlice.elements.findLast((el: TElement) => el.id)
+			let url = 'https://localhost:2021/api/elements'
+			if (lastel) {
+				url += `?since=${lastel.id}`
+			}
+			console.log({ url })
+			axios
+				.get<{ data: TElement[] }>(url)
+				.then(response => {
+					resolve(response.data.data)
+				})
+				.catch(error => {
+					// reject(rejectWithValue(error))
+				})
+				.finally(() => {
+					// void dispatch(setMigrationsRunning(false))
+				})
+		})
+	},
+)
 
 export const setElementMaps = createAsyncThunk('migrations/setElementMaps', async (element_maps: TElementMap[]) => {
 	return new Promise<TElementMap[]>((resolve, reject) => {
@@ -64,7 +76,11 @@ const migrationsSlice = createSlice({
 	initialState,
 	extraReducers: builder => {
 		builder.addCase(getElements.fulfilled, (state, action) => {
-			state.elements = action.payload
+			// state.elements = [
+			// 	...state.elements,
+			// 	...action.payload.filter((el: TElement) => !state.elements.find((element: TElement) => element.id === el.id)),
+			// ]
+			state.elements.push(...action.payload)
 		})
 		builder.addCase(getElementMaps.fulfilled, (state, action) => {
 			state.element_maps = action.payload

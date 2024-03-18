@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
 	MaterialReactTable,
 	useMaterialReactTable,
@@ -12,6 +12,8 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { QueryClient, QueryClientProvider, keepPreviousData, useQuery } from '@tanstack/react-query' //note: this is TanStack React Query V5
 import type { TElement } from '../@types/elements'
 import Search from './admin/search'
+import { getElements } from '../@store/slices/elements'
+import { useAppDispatch, useAppSelector } from '../@store/store'
 
 //Your API response shape will probably be different. Knowing a total row count is important though.
 type ApiResp = {
@@ -20,52 +22,11 @@ type ApiResp = {
 }
 
 const Example = () => {
-	//manage our own state for stuff we want to pass to the API
-	const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([])
-	const [globalFilter, setGlobalFilter] = useState('')
-	const [sorting, setSorting] = useState<MRT_SortingState>([])
-	const [pagination, setPagination] = useState<MRT_PaginationState>({
-		pageIndex: 0,
-		pageSize: 10,
-	})
-
-	//consider storing this code in a custom hook (i.e useFetchUsers)
-	const {
-		data: { data = [], total_row_count } = {}, //your data and api response will probably be different
-		isError,
-		isRefetching,
-		isLoading,
-		refetch,
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-	} = useQuery<ApiResp>({
-		queryKey: [
-			'table-data',
-			columnFilters, //refetch when columnFilters changes
-			globalFilter, //refetch when globalFilter changes
-			pagination.pageIndex, //refetch when pagination.pageIndex changes
-			pagination.pageSize, //refetch when pagination.pageSize changes
-			sorting, //refetch when sorting changes
-		],
-		queryFn: async () => {
-			const fetchURL = new URL(
-				'/api/elements',
-				process.env.NODE_ENV === 'production' ? 'https://www.material-react-table.com' : 'https://localhost:2021',
-			)
-
-			//read our state and pass it to the API as query params
-			fetchURL.searchParams.set('start', `${pagination.pageIndex * pagination.pageSize}`)
-			fetchURL.searchParams.set('size', `${pagination.pageSize}`)
-			fetchURL.searchParams.set('filters', JSON.stringify(columnFilters ?? []))
-			fetchURL.searchParams.set('globalFilter', globalFilter ?? '')
-			fetchURL.searchParams.set('sorting', JSON.stringify(sorting ?? []))
-
-			//use whatever fetch library you want, fetch, axios, etc
-			const response = await fetch(fetchURL.href)
-			const json = (await response.json()) as ApiResp
-			return json
-		},
-		placeholderData: keepPreviousData, //don't go to 0 rows when refetching or paginating to next page
-	})
+	const dispatch = useAppDispatch()
+	const { elements } = useAppSelector(state => state.elementSlice)
+	// useEffect(() => {
+	// 	void dispatch(getElements())
+	// }, [dispatch])
 
 	const columns = useMemo<MRT_ColumnDef<TElement>[]>(() => {
 		return [
@@ -89,6 +50,22 @@ const Example = () => {
 				header: 'emoji',
 			},
 			{
+				Header: 'New?',
+				accessorKey: 'is_new',
+				header: 'is_new',
+				Cell: ({ row }) => {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+					const element = row.original
+					return (
+						row.original.is_new && (
+							<Button variant="text" color={row.original.is_new ? 'success' : 'primary'}>
+								{row.original.is_new ? 'New!' : ''}
+							</Button>
+						)
+					)
+				},
+			},
+			{
 				Header: 'Element Map',
 				header: 'id',
 				accessorKey: 'id',
@@ -106,30 +83,12 @@ const Example = () => {
 
 	const table = useMaterialReactTable({
 		columns,
-		data,
+		data: elements,
 
 		initialState: { showColumnFilters: true, density: 'compact' },
-		manualFiltering: true, //turn off built-in client-side filtering
-		manualPagination: true, //turn off built-in client-side pagination
-		manualSorting: true, //turn off built-in client-side sorting
-		muiToolbarAlertBannerProps: isError
-			? {
-					color: 'error',
-					children: 'Error loading data',
-				}
-			: undefined,
-		onColumnFiltersChange: setColumnFilters,
-		onGlobalFilterChange: setGlobalFilter,
-		onPaginationChange: setPagination,
-		onSortingChange: setSorting,
-		renderTopToolbarCustomActions: () => (
-			<Tooltip arrow title="Refresh Data">
-				{/* eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */}
-				<IconButton onClick={() => refetch()}>
-					<RefreshIcon />
-				</IconButton>
-			</Tooltip>
-		),
+		muiPaginationProps: {
+			rowsPerPageOptions: [5, 10, 20, 50, 100, elements.length],
+		},
 		renderDetailPanel: ({ row }) => {
 			const element = row.original
 			return (
@@ -144,29 +103,26 @@ const Example = () => {
 				</div>
 			)
 		},
-		rowCount: total_row_count,
-		state: {
-			columnFilters,
-			globalFilter,
-			isLoading,
-			pagination,
-			showAlertBanner: isError,
-			showProgressBars: isRefetching,
-			sorting,
-		},
+		// enableRowVirtualization: true,
+		// actionButtons: [
+		// 	{
+		// 		tooltip: 'Refresh',
+		// 		icon: RefreshIcon,
+		// 		onClick: () => {
+		// 			void dispatch(getElements())
+		// 		},
+		// 	},
+		// ],
 	})
 
 	return <MaterialReactTable table={table} />
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-const queryClient = new QueryClient()
-
 const ElementList = () => (
 	//App.tsx or AppProviders file. Don't just wrap this component with QueryClientProvider! Wrap your whole App!
-	<QueryClientProvider client={queryClient}>
-		<Example />
-	</QueryClientProvider>
+	// <QueryClientProvider client={queryClient}>
+	<Example />
+	// </QueryClientProvider>
 )
 
 export default ElementList

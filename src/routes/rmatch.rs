@@ -19,6 +19,8 @@ pub struct Resp {
 }
 
 pub fn get_element_matches(el: &Element) -> E {
+	let mut el = el.clone();
+	el.map = None;
     //base elements
     if el.id < 5 {
         return E {
@@ -30,7 +32,7 @@ pub fn get_element_matches(el: &Element) -> E {
 
     let matches = ElementMap::find_by_result_id(el.id);
 
-    println!("Matches: {:?}", matches);
+    // println!("Matches: {:?}", matches);
     if matches.is_empty() {
         println!("No matches found {:?}", el.id);
         return E {
@@ -49,7 +51,7 @@ pub fn get_element_matches(el: &Element) -> E {
     let parent_2 = Element::find(parent_2_id);
 
     if parent_1.is_err() && parent_2.is_err() {
-        println!("No parents found - {:?}", _match.element_id.unwrap());
+        // println!("No parents found - {:?}", _match.element_id.unwrap());
         return E {
             element: el.clone(),
             parent1: None,
@@ -98,13 +100,25 @@ pub async fn match_elements(path: web::Query<Resp>) -> Result<web::Json<E>> {
                 emoji: "🤷".to_string(),
                 name: "Unknown".to_string(),
                 is_new: Some(false),
+				map: None,
             },
             parent1: None,
             parent2: None,
         }));
     }
 
-    let element = element.unwrap();
+	let element = element.unwrap();
 
-    Ok(web::Json(get_element_matches(&element)))
+	if element.map.is_none() {
+		let mapping = get_element_matches(&element);
+		// save to element
+		let conn = &mut crate::modules::database::get_dbo();
+		// let _ = sql_query(format!("UPDATE elements SET map = '{}' WHERE id = {}", serde_json::to_string(&mapping).unwrap(), element.id)).execute(conn);
+		let c = Element::update_map(element.id, serde_json::to_string(&mapping).unwrap());
+		// return mapping3
+		return Ok(web::Json(mapping));
+	}
+
+	let mapping: E = serde_json::from_str(&element.map.unwrap()).unwrap();
+	return Ok(web::Json(mapping));
 }
