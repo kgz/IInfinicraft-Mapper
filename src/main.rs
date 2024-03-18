@@ -169,6 +169,10 @@ pub fn load_certs(cert: PathBuf, key: PathBuf) -> Result<ServerConfig, String> {
 #[actix_web::main]
 #[allow(unreachable_patterns)]
 async fn main() {
+
+	// port from env
+	let port = std::env::var("PORT").unwrap_or("2021".to_string());
+
     let server = HttpServer::new(|| {
         let cors = Cors::default()
             .allowed_origin("https://localhost")
@@ -193,7 +197,7 @@ async fn main() {
 						
             )
     }).bind_rustls(
-        "0.0.0.0:2021",
+        "0.0.0.0" + &port,
         load_certs(
             std::env::current_dir().unwrap().join("localhost.pem"),
             std::env::current_dir().unwrap().join("localhost-key.pem"),
@@ -202,7 +206,7 @@ async fn main() {
     )
     .unwrap();
 
-    println!("Server running on https://localhost:2020");
+    println!("Server running on https://localhost" + &port);
     server.run().await.unwrap();
     // cron.start();
 }
