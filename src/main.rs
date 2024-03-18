@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader, path::PathBuf};
+use std::{fmt::format, fs::File, io::BufReader, path::PathBuf};
 
 use actix_cors::Cors;
 use actix_web::{http, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
@@ -197,7 +197,7 @@ async fn main() {
 						
             )
     }).bind_rustls(
-        "0.0.0.0" + &port,
+        format!("0.0.0.0:{}", &port),
         load_certs(
             std::env::current_dir().unwrap().join("localhost.pem"),
             std::env::current_dir().unwrap().join("localhost-key.pem"),
@@ -206,7 +206,7 @@ async fn main() {
     )
     .unwrap();
 
-    println!("Server running on https://localhost" + &port);
+    println!("Server running on https://localhost:{}", &port);
     server.run().await.unwrap();
     // cron.start();
 }
