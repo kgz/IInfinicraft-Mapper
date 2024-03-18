@@ -4,7 +4,7 @@ use actix_cors::Cors;
 use actix_web::{http, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use serde::{Deserialize, Serialize};
-use IInfinicraft_Mapper::{models::{element_maps::ElementMap, elements::Element}, routes::rmatch::match_elements};
+use IInfinicraft_Mapper::{models::{element_maps::ElementMap, elements::Element}, routes::rmatch::{get_element_matches, match_elements}};
 use thirtyfour::prelude::*;
 use fantoccini::{ClientBuilder, Locator};
 use actix_web::{Result};
@@ -38,6 +38,7 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
             emoji: emoji.clone(),
             name: result.clone().trim().to_string(),
             is_new: Some(is_new.clone()),
+			map: None
         };
         result_exists = Element::create(new_element);
     } else {
@@ -56,9 +57,14 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
         };
         ElementMap::create(new_element_map);
 	} 
+
+	if result_exists.map.is_none() {
+		let map = get_element_matches(&result_exists);
+		let map = serde_json::to_string(&map).unwrap();
+		let _ = Element::update_map(result_exists.id, map);
+	}
  
     // println!("Element1: {:?}", path);
-    println!("Element1: {:?}, Element2: {:?}, Result: {}, Emoji: {}, Is New: {}", element1, element2, result, emoji, is_new);
 	Ok(web::Json(result_exists))
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -76,6 +82,7 @@ pub struct GetElementsQuery {
 	//filters array of filter
 	filters: Option<String>,
 	globalFilter: Option<String>,
+	since: Option<i32>,
 
 }
 #[derive(Serialize, Clone)]
@@ -87,15 +94,18 @@ pub async fn get_elements(path: web::Query<GetElementsQuery>) -> Result<web::Jso
 	let start = path.start.unwrap_or(-1);
 	let size = path.size.unwrap_or(10);
 	let filters = path.filters.clone().unwrap_or("[]".to_string());
+	let global_filter = path.globalFilter.clone().unwrap_or("".to_string());
+	let since = path.since.unwrap_or(0);
 
 	// json decode filters
 	let filters: Vec<Filter> = serde_json::from_str(&filters).unwrap();
 
-	// let search = path.search.clone().unwrap();
-	println!("Start: {}, End: {}", start, size);
-
-
 	let mut elements = Element::all();
+
+	// filter elements since
+	if since > 0 {
+		elements = elements.into_iter().filter(|el| el.id > since).collect();
+	}
 
 	if  filters.len() > 0 {
 		elements = elements.into_iter().filter(|el| {

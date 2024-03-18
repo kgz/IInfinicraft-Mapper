@@ -2,15 +2,15 @@
 
 (() => {
 	/**
- * Fetches elements from the API.
- * @returns {Promise<{
- * data: {
- * 		id: number,
- * 		name: string,
- * 		emoji: string,
- * 		is_new: boolean
- * }[]}>} A promise that resolves to an array of elements.
- */
+	 * Fetches elements from the API.
+	 * @returns {Promise<{
+	 * data: {
+	 * 		id: number,
+	 * 		name: string,
+	 * 		emoji: string,
+	 * 		is_new: boolean
+	 * }[]}>} A promise that resolves to an array of elements.
+	 */
 	async function get_elements() {
 		return fetch("https://localhost:2021/api/elements").then(res => res.json())
 	}
@@ -128,8 +128,14 @@
 								let percent = Math.round((current / tocheck) * 10000) / 100;
 								const end = Date.now();
 								const time = (end - start) / 1000;
-								const estimated = timeToHuman((time / percent) * 100);
-								console.log(`(${current}/${tocheck} ${percent}%) Checking ${elements[i].name} and ${elements[j].name} Estimated time: ${estimated} seconds`);
+								// const estimated = timeToHuman((time / percent) * 100);
+								// 70% - 20s
+								// total_estimated_time = (20 / 70) * (100 - 70)
+								const time_per_check = time / current;
+								const time_left = time_per_check * (tocheck - current);
+								const left_to_check = tocheck - current;
+								const esimated_left = timeToHuman(time_left);
+								console.log(`(${current}/${tocheck} ${percent}%) Checking ${elements[i].name} and ${elements[j].name} Estimated time: ${esimated_left} seconds, avg timePerCheck: ${time_per_check} seconds, left: ${left_to_check}`);
 								// console.log(`(${current}/${tocheck} ${percent}%) Checking ${elements[i].name} and ${elements[j].name} `);
 								return [elements[i], elements[j]];
 							}
@@ -156,9 +162,14 @@
 					getResult(pair[0].name, pair[1].name).then((res) => {
 						sendData(pair[0].name, pair[1].name, res.result, res.isNew, res.emoji).then((resp) => {
 							console.log(resp);
-							seen.push(pair[0].id.toString() + '-' + pair[1].id.toString());
-							seen.push(pair[1].id.toString() + '-' + pair[0].id.toString());
-							elements.push(resp);
+							if (resp.success) {
+
+								seen.push(pair[0]?.id.toString() + '-' + pair[1]?.id.toString());
+								seen.push(pair[1]?.id.toString() + '-' + pair[0]?.id.toString());
+								elements.push(resp);
+							} else {
+								console.error('Failed to send data to the server');
+							}
 						});
 					});
 
