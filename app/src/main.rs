@@ -1,15 +1,17 @@
 use std::{fmt::format, fs::File, io::BufReader, path::PathBuf};
 
 use actix_cors::Cors;
+use actix_web::Result;
 use actix_web::{http, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use database::models::element_maps::ElementMap;
+use database::models::elements::Element;
+use fantoccini::{ClientBuilder, Locator};
+use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use serde::{Deserialize, Serialize};
-use IInfinicraft_Mapper::{models::{element_maps::ElementMap, elements::Element}, routes::rmatch::{get_element_matches, match_elements}};
 use thirtyfour::prelude::*;
-use fantoccini::{ClientBuilder, Locator};
-use actix_web::{Result};
+use IInfinicraft_Mapper::routes::rmatch::{get_element_matches, match_elements};
 use IInfinicraft_Mapper::templates::index::index;
-use rustls::{Certificate, PrivateKey, ServerConfig};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Resp {
     element1: String,
@@ -19,7 +21,7 @@ pub struct Resp {
     is_new: bool,
 }
 
-pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
+pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>> {
     // let element1 = req.match_info().get("element1");
 
     // get element1 from url params
@@ -30,7 +32,7 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
     let is_new = path.is_new.clone();
 
     let result_exists_temp = Element::find_by_name(&result);
-	let result_exists: Element;
+    let result_exists: Element;
 
     if result_exists_temp.is_err() {
         let new_element = Element {
@@ -38,13 +40,12 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
             emoji: emoji.clone(),
             name: result.clone().trim().to_string(),
             is_new: Some(is_new.clone()),
-			map: None
+            map: None,
         };
         result_exists = Element::create(new_element);
     } else {
-		result_exists = result_exists_temp.unwrap();
-	}
-
+        result_exists = result_exists_temp.unwrap();
+    }
 
     let mapping_exists = ElementMap::find_by_element_ids(&element1, &element2);
 
@@ -56,87 +57,98 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
             result: Some(result_exists.id),
         };
         ElementMap::create(new_element_map);
-	} 
+    }
 
-	if result_exists.map.is_none() {
-		let map = get_element_matches(&result_exists);
-		let map = serde_json::to_string(&map).unwrap();
-		let _ = Element::update_map(result_exists.id, map);
-	}
- 
+    if result_exists.map.is_none() {
+        let map = get_element_matches(&result_exists);
+        let map = serde_json::to_string(&map).unwrap();
+        let _ = Element::update_map(result_exists.id, map);
+    }
+
     // println!("Element1: {:?}", path);
-	Ok(web::Json(result_exists))
+    Ok(web::Json(result_exists))
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Filter {
-	id: String,
-	value: String,
+    id: String,
+    value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct GetElementsQuery {
     start: Option<i32>,
-	size: Option<i32>,
-	// search: Option<String>,
-	//filters array of filter
-	filters: Option<String>,
-	globalFilter: Option<String>,
-	since: Option<i32>,
-
+    size: Option<i32>,
+    // search: Option<String>,
+    //filters array of filter
+    filters: Option<String>,
+    globalFilter: Option<String>,
+    since: Option<i32>,
 }
 #[derive(Serialize, Clone)]
 pub struct ElementsResponse {
-	data: Vec<Element>,
-	total_row_count: i32,
+    data: Vec<Element>,
+    total_row_count: i32,
 }
-pub async fn get_elements(path: web::Query<GetElementsQuery>) -> Result<web::Json<ElementsResponse>> {
-	let start = path.start.unwrap_or(-1);
-	let size = path.size.unwrap_or(10);
-	let filters = path.filters.clone().unwrap_or("[]".to_string());
-	let global_filter = path.globalFilter.clone().unwrap_or("".to_string());
-	let since = path.since.unwrap_or(0);
+pub async fn get_elements(
+    path: web::Query<GetElementsQuery>,
+) -> Result<web::Json<ElementsResponse>> {
+    let start = path.start.unwrap_or(-1);
+    let size = path.size.unwrap_or(10);
+    let filters = path.filters.clone().unwrap_or("[]".to_string());
+    let global_filter = path.globalFilter.clone().unwrap_or("".to_string());
+    let since = path.since.unwrap_or(0);
 
-	// json decode filters
-	let filters: Vec<Filter> = serde_json::from_str(&filters).unwrap();
+    // json decode filters
+    let filters: Vec<Filter> = serde_json::from_str(&filters).unwrap();
 
-	let mut elements = Element::all();
+    let mut elements = Element::all();
 
-	// filter elements since
-	if since > 0 {
-		elements = elements.into_iter().filter(|el| el.id > since).collect();
-	}
+    // filter elements since
+    if since > 0 {
+        elements = elements.into_iter().filter(|el| el.id > since).collect();
+    }
 
-	if  filters.len() > 0 {
-		elements = elements.into_iter().filter(|el| {
-			for filter in filters.iter() {
-				if filter.id == "name" {
-					if !el.name.to_lowercase().contains(&filter.value.to_lowercase()) {
-						return false;
-					}
-				}
-			}
-			true
-		}).collect();
-	}
+    if filters.len() > 0 {
+        elements = elements
+            .into_iter()
+            .filter(|el| {
+                for filter in filters.iter() {
+                    if filter.id == "name" {
+                        if !el
+                            .name
+                            .to_lowercase()
+                            .contains(&filter.value.to_lowercase())
+                        {
+                            return false;
+                        }
+                    }
+                }
+                true
+            })
+            .collect();
+    }
 
-	let total = elements.len();
+    let total = elements.len();
 
-	if start != -1 {
-		elements = elements.into_iter().skip(start as usize).take((size) as usize).collect();
-	}
-	
+    if start != -1 {
+        elements = elements
+            .into_iter()
+            .skip(start as usize)
+            .take((size) as usize)
+            .collect();
+    }
+
     Ok(web::Json(ElementsResponse {
-		data: elements,
-		total_row_count: total as i32,
-	}))
+        data: elements,
+        total_row_count: total as i32,
+    }))
 }
 
 pub async fn get_element_map() -> Result<web::Json<Vec<ElementMap>>> {
     let element_maps = ElementMap::all();
     Ok(web::Json(element_maps))
 }
-
 
 pub fn load_certs(cert: PathBuf, key: PathBuf) -> Result<ServerConfig, String> {
     let cert_file = &mut BufReader::new(File::open(&cert).map_err(|e| e.to_string())?);
@@ -165,13 +177,11 @@ pub fn load_certs(cert: PathBuf, key: PathBuf) -> Result<ServerConfig, String> {
         .map_err(|e| e.to_string())
 }
 
-
 #[actix_web::main]
 #[allow(unreachable_patterns)]
 async fn main() {
-
-	// port from env
-	let port = std::env::var("PORT").unwrap_or("2021".to_string());
+    // port from env
+    let port = std::env::var("PORT").unwrap_or("2021".to_string());
 
     let server = HttpServer::new(|| {
         let cors = Cors::default()
@@ -181,25 +191,23 @@ async fn main() {
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
             // allow all
-
             .max_age(3600);
 
-            App::new()
-			// wrap with extended timeout
-				.wrap(actix_web::middleware::Logger::default())
-                .route("", web::get().to(index))
-                .route("/", web::get().to(index))
-                .service(
-                    web::scope("/api")
+        App::new()
+            // wrap with extended timeout
+            .wrap(actix_web::middleware::Logger::default())
+            .route("", web::get().to(index))
+            .route("/", web::get().to(index))
+            .service(
+                web::scope("/api")
                     .wrap(Cors::default().allow_any_origin().send_wildcard())
-                        .route("/sync", web::get().to(add_to_db))
-                        .route("/elements", web::get().to(get_elements))
-                        .route("/element_maps", web::get().to(get_element_map))
-                        .route("/match", web::get().to(match_elements))
-						
-					)
-				
-    }).bind_rustls(
+                    .route("/sync", web::get().to(add_to_db))
+                    .route("/elements", web::get().to(get_elements))
+                    .route("/element_maps", web::get().to(get_element_map))
+                    .route("/match", web::get().to(match_elements)),
+            )
+    })
+    .bind_rustls(
         format!("0.0.0.0:{}", &port),
         load_certs(
             std::env::current_dir().unwrap().join("localhost.pem"),
@@ -214,9 +222,6 @@ async fn main() {
     // cron.start();
 }
 
-
-
-
 #[derive(Deserialize, Debug)]
 pub struct Response {
     emoji: String,
@@ -224,16 +229,22 @@ pub struct Response {
     result: String,
 }
 
-pub async fn get_url(element1: &Element, element2: &Element) ->Result<Response, Box<dyn std::error::Error>> {
-    let url = format!("https://neal.fun/api/infinite-craft/pair?first={:?}&second={:?}", element1, element2).replace(" ", "%20");
+pub async fn get_url(
+    element1: &Element,
+    element2: &Element,
+) -> Result<Response, Box<dyn std::error::Error>> {
+    let url = format!(
+        "https://neal.fun/api/infinite-craft/pair?first={:?}&second={:?}",
+        element1, element2
+    )
+    .replace(" ", "%20");
     // do get request
     let client = reqwest::Client::new();
     // set request geder :authority:neal.fun
 
-    let body = client.get(&url).send().await?.text().await?; 
+    let body = client.get(&url).send().await?.text().await?;
     println!("{}", body);
     let response: Response = serde_json::from_str(&body)?;
 
     Ok(response)
-
 }

@@ -76,8 +76,7 @@ pub fn get_migrations(conn: &mut impl MigrationHarness<Mysql>) -> Vec<Migrations
     migrations
 }
 
-
-fn get_file_creator(file_name: String) -> Vec<u8>{
+fn get_file_creator(file_name: String) -> Vec<u8> {
     let path = format!("migrations/{}/down.sql", file_name);
     println!("path: {}", path);
 
@@ -109,7 +108,6 @@ pub fn run_pending_migrations(conn: &mut impl MigrationHarness<Mysql>) {
 }
 
 pub fn revert_migration(conn: &mut impl MigrationHarness<Mysql>, name: &str) -> bool {
-    
     for x in MigrationSource::<Mysql>::migrations(&MIGRATIONS)
         .unwrap()
         .into_iter()
@@ -126,10 +124,7 @@ pub fn revert_migration(conn: &mut impl MigrationHarness<Mysql>, name: &str) -> 
     }
     println!("Migration not found: {}", name);
     false
-   
 }
-
-
 
 //     let r = conn.run_migration(name).unwrap();
 //     true
