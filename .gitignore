@@ -20,5 +20,5 @@ Cargo.lock
 
 .env
 
-mysql/
+mysql*/
 dump-data-202402251313.sql

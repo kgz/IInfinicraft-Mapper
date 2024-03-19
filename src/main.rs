@@ -185,6 +185,8 @@ async fn main() {
             .max_age(3600);
 
             App::new()
+			// wrap with extended timeout
+				.wrap(actix_web::middleware::Logger::default())
                 .route("", web::get().to(index))
                 .route("/", web::get().to(index))
                 .service(
@@ -195,7 +197,8 @@ async fn main() {
                         .route("/element_maps", web::get().to(get_element_map))
                         .route("/match", web::get().to(match_elements))
 						
-            )
+					)
+				
     }).bind_rustls(
         format!("0.0.0.0:{}", &port),
         load_certs(

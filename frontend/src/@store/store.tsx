@@ -30,6 +30,12 @@ const loadState = async () => {
 	} as DefaultRootState
 }
 
+const store = configureStore({
+	reducer,
+	middleware: getDefaultMiddleware => getDefaultMiddleware().concat(thunk),
+	preloadedState: await loadState(),
+})
+
 const saveState = async (state: DefaultRootState) => {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 	const db = await openDB(DBConfig.name, DBConfig.version, {
@@ -46,15 +52,17 @@ const saveState = async (state: DefaultRootState) => {
 	})
 	console.log('saving state', state)
 }
-
-const store = configureStore({
-	reducer,
-	middleware: getDefaultMiddleware => getDefaultMiddleware().concat(thunk),
-	preloadedState: await loadState(),
-})
+// let thr: any = null
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call
-store.subscribe(throttle(() => void saveState(store.getState()), 1000))
+store.subscribe(() => {
+	// // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	// thr && thr.cancel()
+	// thr = throttle(() => void saveState(store.getState()), 1000)
+	void saveState(store.getState())
+	// setstate back to load state
+	// store.dispatch({ type: 'RESET' })
+})
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call
 // store.subscribe(() => saveState(store.getState()))
 

@@ -101,7 +101,7 @@
 				 */
 
 				const start = Date.now();
-
+				const initial_seen_length = seen.length;
 				const timeToHuman = (time) => {
 					let seconds = Math.floor(time % 60);
 					let minutes = Math.floor(time / 60);
@@ -109,15 +109,19 @@
 					minutes = Math.floor(minutes % 60);
 					return `${hours}h ${minutes}m ${seconds}s`;
 				}
-				const getNext = () => {
-					while (i < elements.length) {
-						i++;
-						while (j < elements.length) {
-							j++;
-							let current = i * elements.length + j;
-							let tocheck = elements.length ** 2;
 
-							if (!elements[i] || !elements[j]) {
+				let current = 0;
+				const getNext = () => {
+					while (i < elements.length - 1) {
+						i++;
+						while (j < elements.length - 1) {
+							j++;
+							const not_seen = elements.filter(e => !seen.includes(e.id.toString() + '-' + elements[j].id.toString()) && !seen.includes(elements[j].id.toString() + '-' + e.id.toString()));
+							let tocheck = not_seen.length;
+							let total = seen.length + not_seen.length;
+
+
+							if (!elements[i] || !elements[j] || elements.length === 0) {
 								console.error('No more elements to check');
 								return null;
 							}
@@ -125,17 +129,17 @@
 								!seen.includes(elements[i].id.toString() + '-' + elements[j].id.toString())
 								&& !seen.includes(elements[j].id.toString() + '-' + elements[i].id.toString())
 							) {
-								let percent = Math.round((current / tocheck) * 10000) / 100;
+								current++;
+								let percent = Math.round((current / total) * 10000) / 100;
 								const end = Date.now();
 								const time = (end - start) / 1000;
 								// const estimated = timeToHuman((time / percent) * 100);
 								// 70% - 20s
 								// total_estimated_time = (20 / 70) * (100 - 70)
 								const time_per_check = time / current;
-								const time_left = time_per_check * (tocheck - current);
-								const left_to_check = tocheck - current;
+								const time_left = time_per_check * (tocheck);
 								const esimated_left = timeToHuman(time_left);
-								console.log(`(${current}/${tocheck} ${percent}%) Checking ${elements[i].name} and ${elements[j].name} Estimated time: ${esimated_left} seconds, avg timePerCheck: ${time_per_check} seconds, left: ${left_to_check}`);
+								console.log(`(${current}/${total} ${percent}%) Checking ${elements[i].name} and ${elements[j].name} Estimated time: ${esimated_left} seconds, avg timePerCheck: ${time_per_check} seconds, left: ${tocheck}`);
 								// console.log(`(${current}/${tocheck} ${percent}%) Checking ${elements[i].name} and ${elements[j].name} `);
 								return [elements[i], elements[j]];
 							}
@@ -158,23 +162,26 @@
 				while (pair != null) {
 					console.log(pair);
 					pair = getNext();
-
-					getResult(pair[0].name, pair[1].name).then((res) => {
+					if (!pair) {
+						break;
+					}
+					await getResult(pair[0].name, pair[1].name).then((res) => {
 						sendData(pair[0].name, pair[1].name, res.result, res.isNew, res.emoji).then((resp) => {
 							console.log(resp);
-							if (resp.success) {
-
+							if (resp) {
 								seen.push(pair[0]?.id.toString() + '-' + pair[1]?.id.toString());
 								seen.push(pair[1]?.id.toString() + '-' + pair[0]?.id.toString());
-								elements.push(resp);
+								// elements.push(resp);
 							} else {
 								console.error('Failed to send data to the server');
 							}
 						});
+					}).then(async () => {
+						return await sleep(2000 + Math.random() * 5000);
+
 					});
 
 
-					await sleep(2000 + Math.random() * 5000);
 				}
 
 				console.log({ pair });

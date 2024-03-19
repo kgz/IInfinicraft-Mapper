@@ -35,6 +35,8 @@ pub fn get_element_matches(el: &Element) -> E {
     // println!("Matches: {:?}", matches);
     if matches.is_empty() {
         println!("No matches found {:?}", el.id);
+		let id = el.id;
+		panic!("No matches found {}", id);
         return E {
             element: el.clone(),
             parent1: None,
@@ -114,7 +116,7 @@ pub async fn match_elements(path: web::Query<Resp>) -> Result<web::Json<E>> {
 		// save to element
 		let conn = &mut crate::modules::database::get_dbo();
 		// let _ = sql_query(format!("UPDATE elements SET map = '{}' WHERE id = {}", serde_json::to_string(&mapping).unwrap(), element.id)).execute(conn);
-		let c = Element::update_map(element.id, serde_json::to_string(&mapping).unwrap());
+		// let c = Element::update_map(element.id, serde_json::to_string(&mapping).unwrap());
 		// return mapping3
 		return Ok(web::Json(mapping));
 	}

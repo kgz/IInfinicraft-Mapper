@@ -54,6 +54,7 @@ impl ElementMap {
     
 	pub fn find_by_result_id(result_id: i32) -> Vec<ElementMap> {
 		let conn = &mut get_dbo();
+		// println!("Result ID: {:?}", result_id);
 		element_maps::table.filter(element_maps::result.eq(result_id)).load(conn).unwrap()
 	}
 

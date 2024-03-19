@@ -3,7 +3,7 @@ import axios from 'axios'
 import type { TElement, TElementMap } from '../../@types/elements'
 import type { TRootState } from '../store'
 
-const PORT = 2020
+const PORT = 2021
 
 export const initialState: {
 	elements: TElement[]
@@ -83,6 +83,8 @@ const migrationsSlice = createSlice({
 			// 	...action.payload.filter((el: TElement) => !state.elements.find((element: TElement) => element.id === el.id)),
 			// ]
 			state.elements.push(...action.payload)
+			// filter out duplicates
+			state.elements = state.elements.filter((el, index, self) => self.findIndex(e => e.id === el.id) === index)
 		})
 		builder.addCase(getElementMaps.fulfilled, (state, action) => {
 			state.element_maps = action.payload

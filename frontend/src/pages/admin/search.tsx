@@ -5,7 +5,8 @@ import type { ExtNode } from 'relatives-tree/lib/types'
 import type { ForceGraphMethods, LinkObject, NodeObject } from 'react-force-graph-2d'
 import ForceGraph3D from 'react-force-graph-2d'
 import { Label, Input } from 'semantic-ui-react'
-
+import ZoomOutIcon from '@mui/icons-material/ZoomOut'
+import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import { forceCollide } from 'd3'
 import {
 	Alert,
@@ -20,7 +21,9 @@ import {
 	Tooltip,
 	Typography,
 } from '@mui/material'
-
+import { useAppSelector } from '../../@store/store'
+import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap'
+import ZoomInMapIcon from '@mui/icons-material/ZoomInMap'
 type E = {
 	id: number
 	emoji: string
@@ -52,7 +55,7 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 	const [loading, setLoading] = useState(false)
 	const [results, setResults] = useState<TResp | null>(null)
 	const [spacing, setSpacing] = useState(3)
-
+	const { elements } = useAppSelector(state => state.elementSlice)
 	const ref = useRef<ForceGraphMethods<NodeObject<GraphNode>, LinkObject<GraphNode, GraphEdge>> | undefined>()
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -83,12 +86,21 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 	const handleSearch = useCallback(() => {
 		setResults(null)
 		setLoading(true)
+
+		const element = elements.find(element => element.name === search)
+
+		if (element && element.map) {
+			console.log({ element })
+			setResults(JSON.parse(element.map) as TResp)
+			setLoading(false)
+			return
+		}
 		void axios
 			.get<TResp>(`https://localhost:2021/api/match?element=${search}`)
 			.then(response => setResults(response.data))
 			.catch(error => console.log('error', error))
 			.finally(() => setLoading(false))
-	}, [search])
+	}, [elements, search])
 
 	useEffect(() => {
 		if (loading || results) return
@@ -477,51 +489,110 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 							</>
 						</Alert>
 					</div>
-					<ForceGraph3D
-						ref={ref}
-						graphData={{ nodes: nodes1, links: edges1 }}
-						nodeAutoColorBy="label"
-						linkAutoColorBy="source"
-						linkDirectionalParticles={0}
-						linkDirectionalArrowLength={1}
-						linkDirectionalArrowRelPos={100}
-						nodeRelSize={5}
-						backgroundColor="#222"
-						// nodeVal={node => node.level as number}
-						dagLevelDistance={200 * spacing}
-						// dagMode="td"
-						// set length of links
-						nodeId="id"
-						// width={wrapperRef.current?.offsetWidth}
-						// height={wrapperRef.current?.offsetHeight}
-						width={window.innerWidth * 0.6}
-						height={500}
-						dagMode="td"
-						d3VelocityDecay={0.3}
-						// use level distance to set the distance between levels
-						nodeCanvasObject={(node, ctx, globalScale) => {
-							const label = node.label
-							const fontSize = 20 / globalScale
-							ctx.font = `${fontSize}px Sans-Serif`
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-							const textWidth = ctx.measureText(label as string).width
-							const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2) as [number, number]
-
-							ctx.fillStyle = 'rgba(255,255,255, 0)'
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-							ctx.fillRect(
-								node?.x ?? 0 - bckgDimensions[0] / 2,
-								node?.y ?? 0 - bckgDimensions[1] / 2,
-								...bckgDimensions,
-							)
-
-							ctx.textAlign = 'center'
-							ctx.textBaseline = 'middle'
-							ctx.fillStyle = '#cbcbcb'
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-							ctx.fillText(label as string, node.x ?? 0, node.y ?? 0)
+					<div
+						style={{
+							width: window.innerWidth * 0.6,
+							height: 500,
+							position: 'relative',
 						}}
-					/>
+					>
+						<div
+							style={{
+								position: 'absolute',
+								top: 20,
+								right: 20,
+								width: 100,
+								height: 100,
+								// background: 'pink',
+								zIndex: 100,
+								display: 'grid',
+								gridTemplateColumns: '1fr 1fr',
+							}}
+						>
+							<Tooltip title="Zoom In">
+								<Button
+									onClick={() => {
+										ref.current?.zoom(ref.current.zoom() * 1.1)
+									}}
+								>
+									<ZoomInIcon />
+								</Button>
+							</Tooltip>
+							<Tooltip title="Increase Spacing">
+								<Button
+									onClick={() => {
+										setSpacing(spacing => spacing + 0.9)
+										ref.current?.zoom(ref.current.zoom() * 0.1)
+									}}
+								>
+									<ZoomOutMapIcon />
+								</Button>
+							</Tooltip>
+							<Tooltip title="Zoom Out">
+								<Button
+									onClick={() => {
+										ref.current?.zoom(ref.current.zoom() * 0.9)
+									}}
+								>
+									<ZoomOutIcon />
+								</Button>
+							</Tooltip>
+							<Tooltip title="Decrease Spacing">
+								<Button
+									onClick={() => {
+										setSpacing(spacing => spacing * 0.9)
+									}}
+								>
+									<ZoomInMapIcon />
+								</Button>
+							</Tooltip>
+						</div>
+						<ForceGraph3D
+							ref={ref}
+							graphData={{ nodes: nodes1, links: edges1 }}
+							nodeAutoColorBy="label"
+							linkAutoColorBy="source"
+							linkDirectionalParticles={0}
+							linkDirectionalArrowLength={1}
+							linkDirectionalArrowRelPos={100}
+							nodeRelSize={5}
+							backgroundColor="#222"
+							// nodeVal={node => node.level as number}
+							dagLevelDistance={200 * spacing}
+							// dagMode="td"
+							// set length of links
+							nodeId="id"
+							// width={wrapperRef.current?.offsetWidth}
+							// height={wrapperRef.current?.offsetHeight}
+							width={window.innerWidth * 0.6}
+							height={500}
+							dagMode="td"
+							d3VelocityDecay={0.3}
+							// use level distance to set the distance between levels
+							nodeCanvasObject={(node, ctx, globalScale) => {
+								const label = node.label
+								const fontSize = 20 / globalScale
+								ctx.font = `${fontSize}px Sans-Serif`
+								// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+								const textWidth = ctx.measureText(label as string).width
+								const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2) as [number, number]
+
+								ctx.fillStyle = 'rgba(255,255,255, 0)'
+								// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+								ctx.fillRect(
+									node?.x ?? 0 - bckgDimensions[0] / 2,
+									node?.y ?? 0 - bckgDimensions[1] / 2,
+									...bckgDimensions,
+								)
+
+								ctx.textAlign = 'center'
+								ctx.textBaseline = 'middle'
+								ctx.fillStyle = '#cbcbcb'
+								// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+								ctx.fillText(label as string, node.x ?? 0, node.y ?? 0)
+							}}
+						/>
+					</div>
 				</div>
 			}
 		</div>
