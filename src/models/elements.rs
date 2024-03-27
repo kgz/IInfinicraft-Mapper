@@ -1,5 +1,5 @@
 use crate::{modules::database::get_dbo};
-use diesel::{deserialize::FromSql, mysql::MysqlValue, prelude::*, sql_types::{BigInt, BigSerial, Unsigned}};
+use diesel::{deserialize::FromSql, mysql::MysqlValue, prelude::*, sql_query, sql_types::{BigInt, BigSerial, Unsigned}};
 use serde::{Deserialize, Serialize};
 use crate::schema::elements;
 
@@ -20,6 +20,7 @@ pub struct Element {
     pub name: String,
     pub is_new: Option<bool>,
 	pub map: Option<String>,
+	pub created_at: Option<chrono::NaiveDateTime>,
 }
 
 /// Capitalizes the first character in s.

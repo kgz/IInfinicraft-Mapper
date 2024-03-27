@@ -38,7 +38,8 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>>  {
             emoji: emoji.clone(),
             name: result.clone().trim().to_string(),
             is_new: Some(is_new.clone()),
-			map: None
+			map: None,
+			created_at: None,
         };
         result_exists = Element::create(new_element);
     } else {
@@ -169,10 +170,10 @@ pub fn load_certs(cert: PathBuf, key: PathBuf) -> Result<ServerConfig, String> {
 #[actix_web::main]
 #[allow(unreachable_patterns)]
 async fn main() {
-
+	dotenv::dotenv().ok();
 	// port from env
 	let port = std::env::var("PORT").unwrap_or("2021".to_string());
-
+	println!("Port: {}", &port);
     let server = HttpServer::new(|| {
         let cors = Cors::default()
             .allowed_origin("https://localhost")
@@ -193,8 +194,7 @@ async fn main() {
                         .route("/sync", web::get().to(add_to_db))
                         .route("/elements", web::get().to(get_elements))
                         .route("/element_maps", web::get().to(get_element_map))
-                        .route("/match", web::get().to(match_elements))
-						
+                        .route("/match", web::get().to(match_elements))						
             )
     }).bind_rustls(
         format!("0.0.0.0:{}", &port),

@@ -20,6 +20,7 @@ diesel::table! {
         name -> Mediumtext,
         is_new -> Nullable<Bool>,
         map -> Nullable<Longtext>,
+        created_at -> Nullable<Timestamp>,
     }
 }
 
