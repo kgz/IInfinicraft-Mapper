@@ -1,9 +1,10 @@
-use crate::models::element_maps::ElementMap;
-use crate::models::elements::capitalize;
-use crate::models::elements::Element;
 use actix_web::web;
 use actix_web::Result;
-use diesel::sql_query;
+extern crate database;
+
+use database::models::element_maps::ElementMap;
+use database::models::elements::Element;
+use database::modules::database::get_dbo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,8 +20,8 @@ pub struct Resp {
 }
 
 pub fn get_element_matches(el: &Element) -> E {
-	let mut el = el.clone();
-	el.map = None;
+    let mut el = el.clone();
+    el.map = None;
     //base elements
     if el.id < 5 {
         return E {
@@ -35,8 +36,8 @@ pub fn get_element_matches(el: &Element) -> E {
     // println!("Matches: {:?}", matches);
     if matches.is_empty() {
         println!("No matches found {:?}", el.id);
-		let id = el.id;
-		panic!("No matches found {}", id);
+        let id = el.id;
+        panic!("No matches found {}", id);
         return E {
             element: el.clone(),
             parent1: None,
@@ -102,26 +103,25 @@ pub async fn match_elements(path: web::Query<Resp>) -> Result<web::Json<E>> {
                 emoji: "🤷".to_string(),
                 name: "Unknown".to_string(),
                 is_new: Some(false),
-				map: None,
-				created_at: None,
+                map: None,
             },
             parent1: None,
             parent2: None,
         }));
     }
 
-	let element = element.unwrap();
+    let element = element.unwrap();
 
-	if element.map.is_none() {
-		let mapping = get_element_matches(&element);
-		// save to element
-		let conn = &mut crate::modules::database::get_dbo();
-		// let _ = sql_query(format!("UPDATE elements SET map = '{}' WHERE id = {}", serde_json::to_string(&mapping).unwrap(), element.id)).execute(conn);
-		// let c = Element::update_map(element.id, serde_json::to_string(&mapping).unwrap());
-		// return mapping3
-		return Ok(web::Json(mapping));
-	}
+    if element.map.is_none() {
+        let mapping = get_element_matches(&element);
+        // save to element
+        let conn = &mut get_dbo();
+        // let _ = sql_query(format!("UPDATE elements SET map = '{}' WHERE id = {}", serde_json::to_string(&mapping).unwrap(), element.id)).execute(conn);
+        // let c = Element::update_map(element.id, serde_json::to_string(&mapping).unwrap());
+        // return mapping3
+        return Ok(web::Json(mapping));
+    }
 
-	let mapping: E = serde_json::from_str(&element.map.unwrap()).unwrap();
-	return Ok(web::Json(mapping));
+    let mapping: E = serde_json::from_str(&element.map.unwrap()).unwrap();
+    return Ok(web::Json(mapping));
 }
