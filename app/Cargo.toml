@@ -29,4 +29,6 @@ argon2 = "*"
 reqwest = { version = "*", features = ["json"] }
 thirtyfour = "*"
 fantoccini = "*"
-database = { path = "../database" }
+database = { path = "./database" }
+
+# [dependencies.database]

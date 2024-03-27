@@ -59,11 +59,11 @@ pub async fn add_to_db(path: web::Query<Resp>) -> Result<web::Json<Element>> {
         ElementMap::create(new_element_map);
     }
 
-    if result_exists.map.is_none() {
-        let map = get_element_matches(&result_exists);
-        let map = serde_json::to_string(&map).unwrap();
-        let _ = Element::update_map(result_exists.id, map);
-    }
+    // if result_exists.map.is_none() {
+    //     let map = get_element_matches(&result_exists);
+    //     let map = serde_json::to_string(&map).unwrap();
+    //     let _ = Element::update_map(result_exists.id, map);
+    // }
 
     // println!("Element1: {:?}", path);
     Ok(web::Json(result_exists))

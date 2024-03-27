@@ -1,5 +1,7 @@
 use actix_web::web;
 use actix_web::Result;
+extern crate database;
+
 use database::models::element_maps::ElementMap;
 use database::models::elements::Element;
 use database::modules::database::get_dbo;

@@ -420,15 +420,25 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 				>
 					<div
 						style={{
-							width: 500,
+							width: 480,
 							height: '100%',
 							overflow: 'auto',
 							marginRight: 20,
+							// scrollSnapType: 'y proximity',
+							// snap every 44.5
+							scrollSnapType: 'y proximity',
 						}}
 					>
-						<Table>
-							<TableBody>
-								<TableRow>
+						<Table sx={{}}>
+							<TableBody sx={{}}>
+								<TableRow
+									sx={{
+										position: 'sticky',
+										top: 0,
+										background: '#1e1e1e',
+										zIndex: 100,
+									}}
+								>
 									<TableCell sx={{ p: 0.5 }}>Step</TableCell>
 									<TableCell sx={{ p: 0.5 }}>Done?</TableCell>
 									<TableCell sx={{ p: 0.5 }}>First Element</TableCell>
@@ -441,9 +451,19 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 									</TableCell>
 									<TableCell sx={{ p: 0.5 }}>Result</TableCell>
 								</TableRow>
+
 								{steps?.map((step, index) => {
 									return (
-										<TableRow key={index}>
+										<TableRow
+											key={index}
+											sx={{
+												scrollSnapAlign: 'start',
+												// display: 'table-cell',
+												// scrollSnapStop: 'always',
+												scrollSnapMarginBottom: '5px',
+												scrollMarginBottom: '25px',
+											}}
+										>
 											<TableCell sx={{ p: 0.5 }}>{index}</TableCell>
 											<TableCell sx={{ p: 0.5 }}>
 												<Checkbox size="small" />
@@ -480,6 +500,7 @@ const Search = ({ initial_search = '', result_only = false }: { initial_search?:
 							sx={{
 								position: 'sticky',
 								bottom: 0,
+								// marginTop: 10,
 							}}
 							severity="warning"
 						>

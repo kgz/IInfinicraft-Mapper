@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { MRT_Row } from 'material-react-table'
 import {
 	MaterialReactTable,
 	useMaterialReactTable,
@@ -6,8 +7,9 @@ import {
 	type MRT_ColumnFiltersState,
 	type MRT_PaginationState,
 	type MRT_SortingState,
+	MRT_RowData,
 } from 'material-react-table'
-import { Button, IconButton, Tooltip } from '@mui/material'
+import { Button, IconButton, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { QueryClient, QueryClientProvider, keepPreviousData, useQuery } from '@tanstack/react-query' //note: this is TanStack React Query V5
 import type { TElement } from '../@types/elements'
@@ -65,6 +67,62 @@ const Example = () => {
 						)
 					)
 				},
+				// columnFilterDisplayMode: 'toggle',
+				columnFilterDisplayMode: 'popover',
+				enableColumnFilters: true,
+				enableFilters: true,
+				filterFn: (row, id, filterValue) => {
+					// console.log({ row, id, filterValue })
+					//   row.getValue(id).startsWith(filterValue),
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+					if (filterValue === 'y') return row.original.is_new
+					if (filterValue === 'n') return !row.original.is_new
+					return true
+				},
+				enableFacetedValues: true,
+
+				Filter: ({ column }) => {
+					return (
+						<>
+							{/* <Button
+								variant="text"
+								// color={columnFilters[column.id] ? 'success' : 'primary'}
+								onClick={() => {
+									column.setFilterValue(!column.getFilterValue())
+								}}
+							>
+								{column.getFilterValue() ? 'New!' : 'All'}
+							</Button> */}
+							<ToggleButtonGroup
+								color="primary"
+								// value={alignment}
+								exclusive
+								onChange={(event, newAlignment) => {
+									column.setFilterValue(newAlignment)
+								}}
+								aria-label="Platform"
+								size="small"
+								value={column.getFilterValue()}
+							>
+								<ToggleButton
+									sx={{
+										'&.Mui-selected': {
+											// backgroundColor: '#66bb6a',
+											color: '#66bb6a',
+										},
+									}}
+									value={'y'}
+								>
+									New!
+								</ToggleButton>
+								<ToggleButton value={'n'}>No</ToggleButton>
+								<ToggleButton value={'a'}>Any</ToggleButton>
+							</ToggleButtonGroup>
+						</>
+					)
+				},
+				// filterFn: 'myCustomFilterFn',
+				// boolean filter
 			},
 			{
 				Header: 'Element Map',
@@ -85,7 +143,6 @@ const Example = () => {
 	const table = useMaterialReactTable({
 		columns,
 		data: elements,
-
 		initialState: { showColumnFilters: true, density: 'compact' },
 		muiPaginationProps: {
 			rowsPerPageOptions: [5, 10, 20, 50, 100, elements.length],
@@ -114,6 +171,25 @@ const Example = () => {
 		// 		},
 		// 	},
 		// ],
+		renderTopToolbarCustomActions: () => {
+			return (
+				<Tooltip title="Refresh">
+					<IconButton onClick={() => void dispatch(getElements())}>
+						<RefreshIcon />
+					</IconButton>
+				</Tooltip>
+			)
+		},
+		filterFns: {
+			myCustomFilterFn: (row, id, filterValue) => {
+				console.log({ row, id, filterValue })
+				//   row.getValue(id).startsWith(filterValue),
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+				if (filterValue === 'y') return row.original.is_new
+				if (filterValue === 'n') return !row.original.is_new
+				return true
+			},
+		},
 	})
 
 	return <MaterialReactTable table={table} />
