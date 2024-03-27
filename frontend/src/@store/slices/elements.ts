@@ -3,6 +3,8 @@ import axios from 'axios'
 import type { TElement, TElementMap } from '../../@types/elements'
 import type { TRootState } from '../store'
 
+const PORT = 2021
+
 export const initialState: {
 	elements: TElement[]
 	element_maps: TElementMap[]
@@ -25,7 +27,7 @@ export const getElements = createAsyncThunk(
 			const state = getState() as TRootState
 			console.log({ state })
 			const lastel = state.elementSlice.elements.findLast((el: TElement) => el.id)
-			let url = 'https://localhost:2021/api/elements'
+			let url = `https://localhost:${PORT}/api/elements`
 			if (lastel) {
 				url += `?since=${lastel.id}`
 			}
@@ -57,7 +59,7 @@ export const getElementMaps = createAsyncThunk(
 		return new Promise<TElementMap[]>((resolve, reject) => {
 			// void dispatch(setMigrationsRunning(true))
 			axios
-				.get<TElementMap[]>('https://localhost:2021/api/element_maps')
+				.get<TElementMap[]>(`https://localhost:${PORT}/api/element_maps`)
 				.then(response => {
 					resolve(response.data)
 				})
@@ -81,6 +83,8 @@ const migrationsSlice = createSlice({
 			// 	...action.payload.filter((el: TElement) => !state.elements.find((element: TElement) => element.id === el.id)),
 			// ]
 			state.elements.push(...action.payload)
+			// filter out duplicates
+			state.elements = state.elements.filter((el, index, self) => self.findIndex(e => e.id === el.id) === index)
 		})
 		builder.addCase(getElementMaps.fulfilled, (state, action) => {
 			state.element_maps = action.payload

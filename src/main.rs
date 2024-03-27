@@ -186,6 +186,8 @@ async fn main() {
             .max_age(3600);
 
             App::new()
+			// wrap with extended timeout
+				.wrap(actix_web::middleware::Logger::default())
                 .route("", web::get().to(index))
                 .route("/", web::get().to(index))
                 .service(

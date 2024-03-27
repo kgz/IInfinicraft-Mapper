@@ -3,6 +3,8 @@ export type TElement = {
 	emoji: string
 	name: string
 	is_new: boolean
+	map?: string
+	created_at: string
 }
 
 export type TElementMap = {

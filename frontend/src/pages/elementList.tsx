@@ -24,9 +24,10 @@ type ApiResp = {
 const Example = () => {
 	const dispatch = useAppDispatch()
 	const { elements } = useAppSelector(state => state.elementSlice)
-	// useEffect(() => {
-	// 	void dispatch(getElements())
-	// }, [dispatch])
+
+	useEffect(() => {
+		void dispatch(getElements())
+	}, [dispatch])
 
 	const columns = useMemo<MRT_ColumnDef<TElement>[]>(() => {
 		return [
